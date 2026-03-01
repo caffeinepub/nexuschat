@@ -23,7 +23,7 @@ import type { Channel } from "./backend.d";
 
 export default function App() {
   const { identity, clear, isInitializing } = useInternetIdentity();
-  const { isFetching: actorFetching } = useActor();
+  useActor();
   const [selectedChannelId, setSelectedChannelId] = useState<bigint | null>(
     null,
   );
@@ -61,13 +61,7 @@ export default function App() {
   const showShutdownOverlay = isShutdownActive && !isOwner;
 
   // Loading state
-  if (
-    isInitializing ||
-    (isLoggedIn &&
-      actorFetching &&
-      !myProfileQuery.data &&
-      !isRegisteredQuery.data)
-  ) {
+  if (isInitializing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <motion.div

@@ -24,12 +24,14 @@ export interface None {
   __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+// biome-ignore lint/correctness/noUnusedVariables: generated file
 function some<T>(value: T): Some<T> {
   return {
     __kind__: "Some",
     value: value,
   };
 }
+// biome-ignore lint/correctness/noUnusedVariables: generated file
 function none(): None {
   return {
     __kind__: "None",
@@ -38,9 +40,11 @@ function none(): None {
 function isNone<T>(option: Option<T>): option is None {
   return option.__kind__ === "None";
 }
+// biome-ignore lint/correctness/noUnusedVariables: generated file
 function isSome<T>(option: Option<T>): option is Some<T> {
   return option.__kind__ === "Some";
 }
+// biome-ignore lint/correctness/noUnusedVariables: generated file
 function unwrap<T>(option: Option<T>): T {
   if (isNone(option)) {
     throw new Error("unwrap: none");
@@ -50,9 +54,10 @@ function unwrap<T>(option: Option<T>): T {
 function candid_some<T>(value: T): [T] {
   return [value];
 }
-function candid_none<T>(): [] {
+function candid_none<_T>(): [] {
   return [];
 }
+// biome-ignore lint/correctness/noUnusedVariables: generated file
 function record_opt_to_undefined<T>(arg: T | null): T | undefined {
   return arg == null ? undefined : arg;
 }

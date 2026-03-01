@@ -113,6 +113,31 @@ const COMMANDS = [
     syntax: "/cancelshutdown",
     desc: "Cancel active shutdown (owner only)",
   },
+  {
+    cmd: "/party",
+    syntax: "/party",
+    desc: "🎉 Triggers sparkle rain for everyone",
+  },
+  {
+    cmd: "/foodparty",
+    syntax: "/foodparty",
+    desc: "🍕 Rains food emojis all over the screen",
+  },
+  {
+    cmd: "/uwu",
+    syntax: "/uwu",
+    desc: "UwU Activates uwu mode for the whole server",
+  },
+  {
+    cmd: "/fakeban",
+    syntax: "/fakeban",
+    desc: "🚫 Shows yourself a scary fake ban screen (5 sec)",
+  },
+  {
+    cmd: "/explode",
+    syntax: "/explode",
+    desc: "💥 Nukes the server visually with screen shake",
+  },
 ];
 
 // ── Main Component ─────────────────────────────────────────────────────────

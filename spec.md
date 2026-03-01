@@ -1,41 +1,35 @@
 # NexusChat
 
 ## Current State
-New project. No existing code.
+Full-featured Discord-like chat app with auth, channels, real-time messages, admin panel, NexusBot slash commands, shutdown overlay, and role-based permissions. Loading screen shows "Connecting to network..." while `isInitializing` is true (can feel slow due to AuthClient initialization). ChatPane has a slash command handler with ~20 commands including /announce, /shutdown, /help, /stats, etc.
 
 ## Requested Changes (Diff)
 
 ### Add
-- User authentication (login/register with Internet Identity or username/password)
-- User "C.D" is the hardcoded owner with full admin privileges
-- Discord-like chat UI with multiple channels
-- Real-time chat viewing: messages auto-refresh/poll so all users see new messages without manual reload
-- Admin panel for managing users, channels, and messages
-- Admin commands (ban, kick, mute, delete message, promote/demote)
-- Channel management (create, rename, delete channels)
-- Message history per channel
-- Online user list / presence indicator
-- User profiles with display names and roles (owner, admin, member)
+1. **Faster loading screen** — Reduce perceived load time by removing the gate on `actorFetching && !myProfileQuery.data && !isRegisteredQuery.data`. Show loading only during `isInitializing` (identity check). The actor/profile fetch should happen in the background after the auth screen shows, not block the loading spinner.
+2. **5 new fun slash commands** (available to all users, not admin-only):
+   - `/party` — Triggers a full-screen sparkle/confetti rain effect that plays for ~3 seconds. Bot confirms "🎉 Party time!".
+   - `/foodparty` — Rains emoji food items (🍣 🍕 🍔 🌮 🍜 🍩 🍦 🥪 🍗 🥐) all over the screen for ~4 seconds.
+   - `/uwu` — Makes NexusBot "force" all visible users to say "uwu" by posting a fake-forced message in chat via the bot. Bot posts a message like: "UwU mode activated~ Everyone is now saying uwu OwO".
+   - `/fakeban` — Shows the current user a fake "You have been banned" full-screen overlay that lasts 5 seconds then disappears. Looks very real (red, scary), with a countdown. Bot confirms "✅ Fake ban prank executed".
+   - `/explode` (the funny 5th one) — Screen shakes violently for 2 seconds, NexusBot says "💥 @username just nuked the server! Everything is fine. Probably." with a dramatic explosion emoji sequence.
 
 ### Modify
-- N/A (new project)
+- `App.tsx`: Simplify loading gate to only block on `isInitializing`, not on actor/profile fetch states.
+- `ChatPane.tsx`: Add the 5 new fun commands to `COMMAND_LIST` and `handleSlashCommand`. Add fun overlay state for party effects, food rain, fake ban, and screen shake.
+- `/help` text: Add the 5 new commands to the help output.
+- Admin Panel commands tab: Add all 5 new commands to the copy-paste list.
 
 ### Remove
-- N/A (new project)
+Nothing.
 
 ## Implementation Plan
-1. Backend (Motoko):
-   - User store: principal -> { username, role: #owner | #admin | #member, isBanned, isMuted }
-   - Seed owner: username "C.D" with role #owner
-   - Channel store: channelId -> { name, createdBy, createdAt }
-   - Message store: channelId -> [{ id, author, content, timestamp }]
-   - APIs: register, login check, getProfile, listUsers, listChannels, createChannel, deleteChannel, sendMessage, getMessages, banUser, muteUser, kickUser, deleteMessage, promoteUser, demoteUser
-   - Authorization checks on admin actions (only owner/admin can perform)
-
-2. Frontend (React):
-   - Auth screen: username registration / login
-   - Main layout: sidebar (channels list + online users), main chat pane, admin panel toggle
-   - Chat pane: message list with auto-polling (every 2s) for real-time viewing, message input
-   - Admin panel: user management table, channel management, moderation commands
-   - Role badges: Owner (gold), Admin (blue), Member (gray)
-   - Owner "C.D" gets special crown indicator
+1. Fix loading screen in `App.tsx` — remove over-eager loading gate, keep only `isInitializing`.
+2. Add overlay/animation components for:
+   - Sparkle rain (CSS keyframe particles rendered as floating divs or canvas)
+   - Food emoji rain (same pattern, different emojis)
+   - Fake ban overlay (full-screen red alert, 5-second countdown)
+   - Screen shake (CSS animation on root element or wrapper)
+3. Add state in `ChatPane.tsx` for: `showParty`, `showFoodParty`, `showFakeBan`, `shakeScreen`.
+4. Implement the 5 new command handlers inside `handleSlashCommand`.
+5. Update `HELP_TEXT`, `COMMAND_LIST`, and `AdminPanel` commands list.

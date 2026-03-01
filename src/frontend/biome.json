@@ -9,8 +9,7 @@
       "build/**",
       "*.config.js",
       "src/declarations/**",
-      "src/config.ts",
-      "src/main.ts"
+      "src/config.ts"
     ]
   },
   "formatter": {

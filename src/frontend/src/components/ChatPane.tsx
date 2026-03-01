@@ -15,7 +15,7 @@ import {
 } from "@/hooks/useQueries";
 import { Bot, Hash, Loader2, Send, Wifi, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Channel, UserProfile } from "../backend.d";
 import { UserRole } from "../backend.d";
@@ -35,7 +35,8 @@ interface BotMessage {
 const HELP_TEXT = `📋 **Available Commands:**
 /mute @user · /unmute @user · /ban @user · /unban @user · /kick @user
 /promote @user · /demote @user · /announce <message> · /stats · /help
-👑 Owner only: /shutdown <reason> <minutes> · /cancelshutdown`;
+👑 Owner only: /shutdown <reason> <minutes> · /cancelshutdown
+🎉 Fun: /party · /foodparty · /uwu · /fakeban · /explode`;
 
 const COMMAND_LIST = [
   "mute",
@@ -60,6 +61,11 @@ const COMMAND_LIST = [
   "role",
   "pin",
   "unpin",
+  "party",
+  "foodparty",
+  "uwu",
+  "fakeban",
+  "explode",
 ];
 
 // ── ChatPane Props ───────────────────────────────────────────────────────────
@@ -79,6 +85,70 @@ export default function ChatPane({ channel, myProfile, users }: ChatPaneProps) {
   const prevMessageCountRef = useRef(0);
   const isAtBottomRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Fun command states
+  const [showParty, setShowParty] = useState(false);
+  const [showFoodParty, setShowFoodParty] = useState(false);
+  const [showFakeBan, setShowFakeBan] = useState(false);
+  const [fakeBanSecondsLeft, setFakeBanSecondsLeft] = useState(5);
+  const [screenShake, setScreenShake] = useState(false);
+
+  // Pre-generate particle data (stable — no array index keys)
+  const sparkleParticles = useMemo(() => {
+    const colors = [
+      "#FFD700",
+      "#FF69B4",
+      "#00FFFF",
+      "#39FF14",
+      "#FF6600",
+      "#FF1493",
+      "#00FF7F",
+      "#FFE66D",
+      "#FF4500",
+      "#7B68EE",
+    ];
+    return Array.from({ length: 60 }, (_, i) => ({
+      id: `sp-${i}-${colors[i % colors.length].replace("#", "")}`,
+      color: colors[i % colors.length],
+      left: Math.random() * 100,
+      delay: Math.random() * 1.5,
+      duration: 2 + Math.random() * 1,
+      size: 6 + Math.random() * 10,
+    }));
+  }, []);
+
+  const foodParticles = useMemo(() => {
+    const foods = [
+      "🍣",
+      "🍕",
+      "🍔",
+      "🌮",
+      "🍜",
+      "🍩",
+      "🍦",
+      "🥪",
+      "🍗",
+      "🥐",
+      "🍱",
+      "🌯",
+      "🧁",
+      "🍫",
+      "🍉",
+      "🥩",
+      "🦐",
+      "🍤",
+      "🧆",
+      "🥞",
+    ];
+    return Array.from({ length: 50 }, (_, i) => ({
+      id: `fd-${i}-${foods[i % foods.length]}`,
+      food: foods[i % foods.length],
+      left: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 2.5 + Math.random() * 1.5,
+      size: 24 + Math.floor(Math.random() * 20),
+    }));
+  }, []);
 
   const messagesQuery = useMessages(channel?.id ?? null);
   const messages = messagesQuery.data ?? [];
@@ -162,6 +232,57 @@ export default function ChatPane({ channel, myProfile, users }: ChatPaneProps) {
       addBotMessage(
         `❌ Unknown command \`${parts[0]}\`. Type \`/help\` to see available commands.`,
         true,
+      );
+      return;
+    }
+
+    // /party — sparkle rain!
+    if (cmdName === "party") {
+      setShowParty(true);
+      setTimeout(() => setShowParty(false), 3000);
+      addBotMessage("🎉 **PARTY TIME!** Sparkles incoming!!");
+      return;
+    }
+
+    // /foodparty — food emoji rain!
+    if (cmdName === "foodparty") {
+      setShowFoodParty(true);
+      setTimeout(() => setShowFoodParty(false), 4000);
+      addBotMessage("🍣🍕🍔🌮 **FOOD PARTY!** It's raining food!!");
+      return;
+    }
+
+    // /uwu — uwu mode
+    if (cmdName === "uwu") {
+      addBotMessage(
+        "UwU mode activated~ OwO everyone here is obligated to say uwu now. No exceptions. uwu uwu uwu~ (✿◠‿◠)",
+      );
+      return;
+    }
+
+    // /fakeban — fake ban overlay for 5 seconds
+    if (cmdName === "fakeban") {
+      setFakeBanSecondsLeft(5);
+      setShowFakeBan(true);
+      let secs = 5;
+      const countdownInterval = setInterval(() => {
+        secs -= 1;
+        setFakeBanSecondsLeft(secs);
+        if (secs <= 0) {
+          clearInterval(countdownInterval);
+          setShowFakeBan(false);
+        }
+      }, 1000);
+      addBotMessage("✅ Fake ban prank executed on yourself lol");
+      return;
+    }
+
+    // /explode — server nuke screen shake
+    if (cmdName === "explode") {
+      setScreenShake(true);
+      setTimeout(() => setScreenShake(false), 2000);
+      addBotMessage(
+        `💥💥💥 **${myProfile?.username ?? "Someone"} just NUKED the server!!** Everything is fine. Probably. 💀☠️💀\n(please hold — damage assessment in progress...)`,
       );
       return;
     }
@@ -348,7 +469,7 @@ export default function ChatPane({ channel, myProfile, users }: ChatPaneProps) {
 
     // Informational-only commands (not yet implemented in backend)
     const infoOnlyCmds: Record<string, string> = {
-      clear: "🗑️ /clear is owner-only. Use the admin panel to manage messages.",
+      clear: "🗑️ /clear is owner-only.",
       slowmode: "⏱️ /slowmode is not yet available in this version.",
       lock: "🔒 /lock is not yet available in this version.",
       unlock: "🔓 /unlock is not yet available in this version.",
@@ -435,7 +556,248 @@ export default function ChatPane({ channel, myProfile, users }: ChatPaneProps) {
   ].sort((a, b) => a.sortTs - b.sortTs);
 
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden">
+    <div
+      className="flex-1 flex flex-col bg-background overflow-hidden"
+      style={
+        screenShake ? { animation: "nexus-shake 0.1s infinite" } : undefined
+      }
+    >
+      {/* Keyframe styles for fun commands */}
+      <style>{`
+        @keyframes nexus-shake {
+          0%   { transform: translate(0, 0) rotate(0deg); }
+          10%  { transform: translate(-4px, -3px) rotate(-0.5deg); }
+          20%  { transform: translate(5px, 2px) rotate(0.5deg); }
+          30%  { transform: translate(-5px, 4px) rotate(-0.3deg); }
+          40%  { transform: translate(4px, -2px) rotate(0.3deg); }
+          50%  { transform: translate(-3px, 5px) rotate(-0.5deg); }
+          60%  { transform: translate(5px, -4px) rotate(0.5deg); }
+          70%  { transform: translate(-4px, 2px) rotate(-0.3deg); }
+          80%  { transform: translate(3px, -5px) rotate(0.3deg); }
+          90%  { transform: translate(-5px, 3px) rotate(-0.5deg); }
+          100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        @keyframes nexus-sparkle-fall {
+          0%   { transform: translateY(-20px) scale(0) rotate(0deg); opacity: 1; }
+          20%  { transform: translateY(15vh) scale(1.2) rotate(120deg); opacity: 1; }
+          80%  { opacity: 0.8; }
+          100% { transform: translateY(110vh) scale(0.6) rotate(360deg); opacity: 0; }
+        }
+        @keyframes nexus-food-fall {
+          0%   { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(110vh) rotate(540deg); opacity: 0.6; }
+        }
+      `}</style>
+
+      {/* ── Party Sparkles Overlay ── */}
+      {showParty && (
+        <div
+          className="fixed inset-0 pointer-events-none overflow-hidden"
+          style={{ zIndex: 50 }}
+        >
+          {sparkleParticles.map((p) => (
+            <div
+              key={p.id}
+              style={{
+                position: "absolute",
+                left: `${p.left}%`,
+                top: 0,
+                width: `${p.size}px`,
+                height: `${p.size}px`,
+                borderRadius: "50%",
+                backgroundColor: p.color,
+                boxShadow: `0 0 ${p.size}px ${p.color}`,
+                animation: `nexus-sparkle-fall ${p.duration}s ${p.delay}s ease-in forwards`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Food Party Overlay ── */}
+      {showFoodParty && (
+        <div
+          className="fixed inset-0 pointer-events-none overflow-hidden"
+          style={{ zIndex: 50 }}
+        >
+          {foodParticles.map((p) => (
+            <div
+              key={p.id}
+              style={{
+                position: "absolute",
+                left: `${p.left}%`,
+                top: 0,
+                fontSize: `${p.size}px`,
+                animation: `nexus-food-fall ${p.duration}s ${p.delay}s linear forwards`,
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+              }}
+            >
+              {p.food}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Fake Ban Overlay ── */}
+      {showFakeBan && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{
+            zIndex: 999,
+            backgroundColor: "rgba(0,0,0,0.97)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            className="max-w-lg w-full mx-6 rounded-xl p-8 text-center relative overflow-hidden"
+            style={{
+              border: "2px solid rgba(220,38,38,0.7)",
+              backgroundColor: "rgba(10,0,0,0.95)",
+              boxShadow:
+                "0 0 60px rgba(220,38,38,0.3), 0 0 120px rgba(220,38,38,0.1) inset",
+            }}
+          >
+            {/* Red scanner line */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: "2px",
+                background:
+                  "linear-gradient(90deg, transparent, rgba(220,38,38,0.9), transparent)",
+                animation: "nexus-sparkle-fall 0s linear none",
+              }}
+            />
+            {/* Big ban icon */}
+            <div style={{ fontSize: "72px", marginBottom: "16px" }}>🚫</div>
+
+            {/* YOU HAVE BEEN BANNED */}
+            <h1
+              style={{
+                color: "#fff",
+                fontFamily: "monospace",
+                fontSize: "28px",
+                fontWeight: "900",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                marginBottom: "8px",
+                textShadow: "0 0 20px rgba(220,38,38,0.8)",
+              }}
+            >
+              YOU HAVE BEEN BANNED
+            </h1>
+
+            {/* Server name */}
+            <p
+              style={{
+                color: "rgba(255,255,255,0.6)",
+                fontFamily: "monospace",
+                fontSize: "13px",
+                marginBottom: "20px",
+                letterSpacing: "0.05em",
+              }}
+            >
+              from{" "}
+              <span style={{ color: "rgba(220,38,38,0.9)" }}>NexusChat</span>
+            </p>
+
+            {/* Reason box */}
+            <div
+              style={{
+                backgroundColor: "rgba(220,38,38,0.08)",
+                border: "1px solid rgba(220,38,38,0.3)",
+                borderRadius: "8px",
+                padding: "12px 16px",
+                marginBottom: "20px",
+              }}
+            >
+              <p
+                style={{
+                  color: "rgba(220,38,38,0.9)",
+                  fontFamily: "monospace",
+                  fontSize: "12px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.15em",
+                  marginBottom: "4px",
+                }}
+              >
+                REASON
+              </p>
+              <p
+                style={{
+                  color: "rgba(255,255,255,0.85)",
+                  fontFamily: "monospace",
+                  fontSize: "15px",
+                  fontWeight: "bold",
+                }}
+              >
+                Being too awesome 😎
+              </p>
+            </div>
+
+            {/* Countdown */}
+            <div
+              style={{
+                backgroundColor: "rgba(220,38,38,0.05)",
+                border: "1px solid rgba(220,38,38,0.2)",
+                borderRadius: "8px",
+                padding: "10px",
+                marginBottom: "20px",
+              }}
+            >
+              <p
+                style={{
+                  color: "rgba(255,255,255,0.5)",
+                  fontFamily: "monospace",
+                  fontSize: "12px",
+                  marginBottom: "4px",
+                }}
+              >
+                This will expire in...
+              </p>
+              <p
+                style={{
+                  color: "#FF4444",
+                  fontFamily: "monospace",
+                  fontSize: "32px",
+                  fontWeight: "900",
+                  textShadow: "0 0 16px rgba(255,68,68,0.7)",
+                }}
+              >
+                {fakeBanSecondsLeft}s
+              </p>
+            </div>
+
+            {/* Appeal fine print */}
+            <p
+              style={{
+                color: "rgba(255,255,255,0.25)",
+                fontFamily: "monospace",
+                fontSize: "11px",
+              }}
+            >
+              Appeal at discord.gg/nexus... (just kidding)
+            </p>
+
+            {/* NexusChat branding */}
+            <p
+              style={{
+                color: "rgba(255,255,255,0.15)",
+                fontFamily: "monospace",
+                fontSize: "10px",
+                marginTop: "16px",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+              }}
+            >
+              NexusChat Security System v4.2.0
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Channel header */}
       <div
         className="h-14 flex items-center justify-between px-4 border-b border-border flex-shrink-0"
