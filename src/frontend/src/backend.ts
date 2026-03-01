@@ -8,7 +8,7 @@
 
 import { Actor, HttpAgent, type HttpAgentOptions, type ActorConfig, type Agent, type ActorSubclass } from "@icp-sdk/core/agent";
 import type { Principal } from "@icp-sdk/core/principal";
-import { idlFactory, type _SERVICE } from "./declarations/main.did";
+import { idlFactory, type _SERVICE } from "./declarations/backend.did";
 export interface Some<T> {
     __kind__: "Some";
     value: T;
@@ -110,6 +110,13 @@ export type Result_3 = {
     __kind__: "err";
     err: string;
 };
+export interface ShutdownStatus {
+    startedAt: bigint;
+    startedBy: string;
+    active: boolean;
+    endsAt: bigint;
+    reason: string;
+}
 export interface Message {
     id: bigint;
     authorUsername: string;
@@ -149,10 +156,11 @@ export enum UserRole__1 {
     user = "user",
     guest = "guest"
 }
-export interface mainInterface {
+export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole__1): Promise<void>;
     banUser(target: Principal): Promise<Result>;
+    cancelShutdown(): Promise<Result>;
     createChannel(name: string): Promise<Result_3>;
     deleteChannel(channelId: bigint): Promise<Result>;
     deleteMessage(channelId: bigint, messageId: bigint): Promise<Result>;
@@ -160,6 +168,7 @@ export interface mainInterface {
     getCallerUserRole(): Promise<UserRole__1>;
     getMessages(channelId: bigint, since: bigint | null): Promise<Array<Message>>;
     getMyProfile(): Promise<UserProfile | null>;
+    getShutdownStatus(): Promise<ShutdownStatus>;
     isCallerAdmin(): Promise<boolean>;
     isRegistered(): Promise<boolean>;
     kickUser(target: Principal): Promise<Result>;
@@ -169,11 +178,12 @@ export interface mainInterface {
     promoteUser(target: Principal): Promise<Result>;
     register(username: string): Promise<Result_2>;
     sendMessage(channelId: bigint, content: string): Promise<Result_1>;
+    startShutdown(reason: string, durationSeconds: bigint): Promise<Result>;
     unbanUser(target: Principal): Promise<Result>;
     unmuteUser(target: Principal): Promise<Result>;
 }
-import type { Channel as _Channel, Message as _Message, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, UserProfile as _UserProfile, UserRole as _UserRole, UserRole__1 as _UserRole__1 } from "./declarations/main.did.d.ts";
-export class Main implements mainInterface {
+import type { Channel as _Channel, Message as _Message, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, UserProfile as _UserProfile, UserRole as _UserRole, UserRole__1 as _UserRole__1 } from "./declarations/backend.did.d.ts";
+export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
         if (this.processError) {
@@ -214,6 +224,20 @@ export class Main implements mainInterface {
             }
         } else {
             const result = await this.actor.banUser(arg0);
+            return from_candid_Result_n3(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async cancelShutdown(): Promise<Result> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.cancelShutdown();
+                return from_candid_Result_n3(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.cancelShutdown();
             return from_candid_Result_n3(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -313,6 +337,20 @@ export class Main implements mainInterface {
         } else {
             const result = await this.actor.getMyProfile();
             return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getShutdownStatus(): Promise<ShutdownStatus> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getShutdownStatus();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getShutdownStatus();
+            return result;
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -439,6 +477,20 @@ export class Main implements mainInterface {
         } else {
             const result = await this.actor.sendMessage(arg0, arg1);
             return from_candid_Result_1_n18(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async startShutdown(arg0: string, arg1: bigint): Promise<Result> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.startShutdown(arg0, arg1);
+                return from_candid_Result_n3(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.startShutdown(arg0, arg1);
+            return from_candid_Result_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async unbanUser(arg0: Principal): Promise<Result> {
@@ -642,7 +694,7 @@ export interface CreateActorOptions {
     actorOptions?: ActorConfig;
     processError?: (error: unknown) => never;
 }
-export function createActor(canisterId: string, _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, options: CreateActorOptions = {}): Main {
+export function createActor(canisterId: string, _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, options: CreateActorOptions = {}): Backend {
     const agent = options.agent || HttpAgent.createSync({
         ...options.agentOptions
     });
@@ -654,7 +706,5 @@ export function createActor(canisterId: string, _uploadFile: (file: ExternalBlob
         canisterId: canisterId,
         ...options.actorOptions
     });
-    return new Main(actor, _uploadFile, _downloadFile, options.processError);
+    return new Backend(actor, _uploadFile, _downloadFile, options.processError);
 }
-
-export type backendInterface = mainInterface;

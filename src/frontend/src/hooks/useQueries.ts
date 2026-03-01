@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Channel, Message, UserProfile } from "../backend.d";
+import type {
+  Channel,
+  Message,
+  ShutdownStatus,
+  UserProfile,
+} from "../backend.d";
 import { useActor } from "./useActor";
 
 // ── Channels ──────────────────────────────────────────────────────────────────
@@ -272,5 +277,61 @@ export function useDemoteUser() {
     },
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+
+// ── Shutdown ──────────────────────────────────────────────────────────────────
+
+export function useShutdownStatus() {
+  const { actor, isFetching } = useActor();
+  return useQuery<ShutdownStatus>({
+    queryKey: ["shutdownStatus"],
+    queryFn: async () => {
+      if (!actor)
+        return {
+          active: false,
+          reason: "",
+          endsAt: 0n,
+          startedAt: 0n,
+          startedBy: "",
+        };
+      return actor.getShutdownStatus();
+    },
+    enabled: !!actor && !isFetching,
+    refetchInterval: 3_000,
+  });
+}
+
+export function useStartShutdown() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      reason,
+      durationSeconds,
+    }: {
+      reason: string;
+      durationSeconds: number;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      const result = await actor.startShutdown(reason, BigInt(durationSeconds));
+      if (result.__kind__ === "err") throw new Error(result.err);
+    },
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ["shutdownStatus"] }),
+  });
+}
+
+export function useCancelShutdown() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      const result = await actor.cancelShutdown();
+      if (result.__kind__ === "err") throw new Error(result.err);
+    },
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ["shutdownStatus"] }),
   });
 }

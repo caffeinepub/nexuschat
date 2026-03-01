@@ -2,6 +2,7 @@ import AdminPanel from "@/components/AdminPanel";
 import AuthScreen from "@/components/AuthScreen";
 import ChannelSidebar from "@/components/ChannelSidebar";
 import ChatPane from "@/components/ChatPane";
+import ShutdownOverlay from "@/components/ShutdownOverlay";
 import UsersSidebar from "@/components/UsersSidebar";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
@@ -11,6 +12,7 @@ import {
   useChannels,
   useIsRegistered,
   useMyProfile,
+  useShutdownStatus,
   useUsers,
 } from "@/hooks/useQueries";
 import { Loader2, LogOut, Shield, Zap } from "lucide-react";
@@ -31,6 +33,7 @@ export default function App() {
   const myProfileQuery = useMyProfile();
   const channelsQuery = useChannels();
   const usersQuery = useUsers();
+  const shutdownQuery = useShutdownStatus();
 
   const isLoggedIn = !!identity;
   const isRegistered = isRegisteredQuery.data === true || registeredFlag;
@@ -51,6 +54,11 @@ export default function App() {
 
   const isAdmin =
     myProfile?.role === UserRole.admin || myProfile?.role === UserRole.owner;
+  const isOwner = myProfile?.role === UserRole.owner;
+
+  const shutdownStatus = shutdownQuery.data;
+  const isShutdownActive = shutdownStatus?.active === true;
+  const showShutdownOverlay = isShutdownActive && !isOwner;
 
   // Loading state
   if (
@@ -104,6 +112,14 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Toaster richColors theme="dark" position="top-right" />
+
+      {/* Shutdown overlay for non-owner users */}
+      <ShutdownOverlay
+        active={showShutdownOverlay}
+        reason={shutdownStatus?.reason ?? ""}
+        endsAt={shutdownStatus?.endsAt ?? 0n}
+        startedBy={shutdownStatus?.startedBy ?? ""}
+      />
 
       {/* Top bar */}
       <header

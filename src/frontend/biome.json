@@ -4,13 +4,13 @@
     "ignore": [
       "**/backend.ts",
       "**/backend.d.ts",
+      "**/main.ts",
       "dist/**",
       "node_modules/**",
       "build/**",
       "*.config.js",
       "src/declarations/**",
-      "src/config.ts",
-      "src/main.ts"
+      "src/config.ts"
     ]
   },
   "formatter": {

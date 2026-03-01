@@ -28,6 +28,13 @@ export type Result_3 = {
     __kind__: "err";
     err: string;
 };
+export interface ShutdownStatus {
+    startedAt: bigint;
+    startedBy: string;
+    active: boolean;
+    endsAt: bigint;
+    reason: string;
+}
 export interface Message {
     id: bigint;
     authorUsername: string;
@@ -67,9 +74,10 @@ export enum UserRole__1 {
     user = "user",
     guest = "guest"
 }
-export interface mainInterface {
+export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole__1): Promise<void>;
     banUser(target: Principal): Promise<Result>;
+    cancelShutdown(): Promise<Result>;
     createChannel(name: string): Promise<Result_3>;
     deleteChannel(channelId: bigint): Promise<Result>;
     deleteMessage(channelId: bigint, messageId: bigint): Promise<Result>;
@@ -77,6 +85,7 @@ export interface mainInterface {
     getCallerUserRole(): Promise<UserRole__1>;
     getMessages(channelId: bigint, since: bigint | null): Promise<Array<Message>>;
     getMyProfile(): Promise<UserProfile | null>;
+    getShutdownStatus(): Promise<ShutdownStatus>;
     isCallerAdmin(): Promise<boolean>;
     isRegistered(): Promise<boolean>;
     kickUser(target: Principal): Promise<Result>;
@@ -86,9 +95,7 @@ export interface mainInterface {
     promoteUser(target: Principal): Promise<Result>;
     register(username: string): Promise<Result_2>;
     sendMessage(channelId: bigint, content: string): Promise<Result_1>;
+    startShutdown(reason: string, durationSeconds: bigint): Promise<Result>;
     unbanUser(target: Principal): Promise<Result>;
     unmuteUser(target: Principal): Promise<Result>;
 }
-
-export type backendInterface = mainInterface;
-export type CreateActorOptions = import("./backend").CreateActorOptions;

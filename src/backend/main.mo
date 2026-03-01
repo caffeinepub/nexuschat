@@ -4,11 +4,14 @@ import Principal "mo:core/Principal";
 import Time "mo:core/Time";
 import Iter "mo:core/Iter";
 import Text "mo:core/Text";
+import Runtime "mo:core/Runtime";
+import Migration "migration";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
+// Specify the data migration function in with-clause
+(with migration = Migration.run)
 persistent actor NexusChat {
-
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
@@ -41,6 +44,14 @@ persistent actor NexusChat {
 
   type Result<T> = { #ok : T; #err : Text };
 
+  type ShutdownStatus = {
+    active : Bool;
+    reason : Text;
+    endsAt : Int;
+    startedAt : Int;
+    startedBy : Text;
+  };
+
   let users : Map.Map<Principal, UserProfile> = Map.empty();
   let usernameIndex : Map.Map<Text, Principal> = Map.empty();
   let channels : Map.Map<Nat, Channel> = Map.empty();
@@ -48,6 +59,11 @@ persistent actor NexusChat {
   var nextChannelId : Nat = 1;
   var nextMessageId : Nat = 1;
   var initialized : Bool = false;
+  var shutdownActive : Bool = false;
+  var shutdownReason : Text = "";
+  var shutdownEndsAt : Int = 0;
+  var shutdownStartedAt : Int = 0;
+  var shutdownStartedBy : Text = "";
 
   func ensureInit() {
     if (not initialized) {
@@ -69,7 +85,7 @@ persistent actor NexusChat {
     if (username.size() == 0 or username.size() > 32) return #err("Username must be 1-32 characters");
     switch (users.get(caller)) { case (?_) return #err("Already registered"); case null {} };
     switch (usernameIndex.get(username)) { case (?_) return #err("Username taken"); case null {} };
-    let role : UserRole = if (username == "C.D") #owner else #member;
+    let role : UserRole = if (username == "C.D") { #owner } else { #member };
     let profile : UserProfile = {
       principal_ = caller;
       username = username;
@@ -80,7 +96,7 @@ persistent actor NexusChat {
     };
     users.add(caller, profile);
     usernameIndex.add(username, caller);
-    #ok(profile)
+    #ok(profile);
   };
 
   public query ({ caller }) func isRegistered() : async Bool {
@@ -88,23 +104,25 @@ persistent actor NexusChat {
   };
 
   public query ({ caller }) func getMyProfile() : async ?UserProfile {
-    users.get(caller)
+    users.get(caller);
   };
 
   public query func listUsers() : async [UserProfile] {
-    users.values().toArray()
+    users.values().toArray();
   };
 
   public query func listChannels() : async [Channel] {
-    channels.values().toArray()
+    channels.values().toArray();
   };
 
   public query func getMessages(channelId : Nat, since : ?Int) : async [Message] {
     let msgs = switch (messages.get(channelId)) { case null []; case (?m) m };
     switch (since) {
-      case null msgs;
-      case (?t) msgs.filter(func(m : Message) : Bool { m.timestamp > t });
-    }
+      case null { msgs };
+      case (?t) {
+        msgs.filter(func(m : Message) : Bool { m.timestamp > t });
+      };
+    };
   };
 
   public shared ({ caller }) func sendMessage(channelId : Nat, content : Text) : async Result<Message> {
@@ -123,15 +141,15 @@ persistent actor NexusChat {
       timestamp = Time.now();
     };
     nextMessageId += 1;
-    let existing = switch (messages.get(channelId)) { case null []; case (?m) m };
+    let existing = switch (messages.get(channelId)) { case null [] ; case (?m) m };
     let updated = existing.concat([msg]);
     let trimmed = if (updated.size() > 200) {
-      updated.sliceToArray(updated.size() - 200, updated.size())
+      updated.sliceToArray(updated.size() - 200, updated.size());
     } else {
-      updated
+      updated;
     };
     messages.add(channelId, trimmed);
-    #ok(msg)
+    #ok(msg);
   };
 
   public shared ({ caller }) func createChannel(name : Text) : async Result<Channel> {
@@ -148,7 +166,7 @@ persistent actor NexusChat {
     channels.add(nextChannelId, ch);
     messages.add(nextChannelId, []);
     nextChannelId += 1;
-    #ok(ch)
+    #ok(ch);
   };
 
   public shared ({ caller }) func deleteChannel(channelId : Nat) : async Result<()> {
@@ -157,7 +175,7 @@ persistent actor NexusChat {
     switch (channels.get(channelId)) { case null return #err("Channel not found"); case (?_) {} };
     channels.remove(channelId);
     messages.remove(channelId);
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func deleteMessage(channelId : Nat, messageId : Nat) : async Result<()> {
@@ -165,7 +183,7 @@ persistent actor NexusChat {
     if (profile.role == #member) return #err("Admin or owner required");
     let msgs = switch (messages.get(channelId)) { case null return #err("Channel not found"); case (?m) m };
     messages.add(channelId, msgs.filter(func(m : Message) : Bool { m.id != messageId }));
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func banUser(target : Principal) : async Result<()> {
@@ -174,7 +192,7 @@ persistent actor NexusChat {
     let tp = switch (users.get(target)) { case null return #err("User not found"); case (?p) p };
     if (tp.role == #owner) return #err("Cannot ban the owner");
     users.add(target, { tp with isBanned = true });
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func unbanUser(target : Principal) : async Result<()> {
@@ -182,7 +200,7 @@ persistent actor NexusChat {
     if (cp.role == #member) return #err("Admin or owner required");
     let tp = switch (users.get(target)) { case null return #err("User not found"); case (?p) p };
     users.add(target, { tp with isBanned = false });
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func muteUser(target : Principal) : async Result<()> {
@@ -191,7 +209,7 @@ persistent actor NexusChat {
     let tp = switch (users.get(target)) { case null return #err("User not found"); case (?p) p };
     if (tp.role == #owner) return #err("Cannot mute the owner");
     users.add(target, { tp with isMuted = true });
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func unmuteUser(target : Principal) : async Result<()> {
@@ -199,7 +217,7 @@ persistent actor NexusChat {
     if (cp.role == #member) return #err("Admin or owner required");
     let tp = switch (users.get(target)) { case null return #err("User not found"); case (?p) p };
     users.add(target, { tp with isMuted = false });
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func kickUser(target : Principal) : async Result<()> {
@@ -209,7 +227,7 @@ persistent actor NexusChat {
     if (tp.role == #owner) return #err("Cannot kick the owner");
     users.remove(target);
     usernameIndex.remove(tp.username);
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func promoteUser(target : Principal) : async Result<()> {
@@ -217,7 +235,7 @@ persistent actor NexusChat {
     if (cp.role != #owner) return #err("Owner only");
     let tp = switch (users.get(target)) { case null return #err("User not found"); case (?p) p };
     users.add(target, { tp with role = #admin });
-    #ok(())
+    #ok(());
   };
 
   public shared ({ caller }) func demoteUser(target : Principal) : async Result<()> {
@@ -226,6 +244,48 @@ persistent actor NexusChat {
     let tp = switch (users.get(target)) { case null return #err("User not found"); case (?p) p };
     if (tp.role == #owner) return #err("Cannot demote the owner");
     users.add(target, { tp with role = #member });
-    #ok(())
+    #ok(());
   };
-}
+
+  public shared ({ caller }) func startShutdown(reason : Text, durationSeconds : Nat) : async Result<()> {
+    switch (users.get(caller)) {
+      case (?user) {
+        if (user.role != #owner) { return #err("Only owner can start shutdown") };
+        shutdownActive := true;
+        shutdownReason := reason;
+        shutdownEndsAt := Time.now() + durationSeconds * 1_000_000_000;
+        shutdownStartedAt := Time.now();
+        shutdownStartedBy := user.username;
+        #ok(());
+      };
+      case (null) { #err("User not found") };
+    };
+  };
+
+  public shared ({ caller }) func cancelShutdown() : async Result<()> {
+    switch (users.get(caller)) {
+      case (?user) {
+        if (user.role != #owner) { return #err("Only owner can cancel shutdown") };
+        shutdownActive := false;
+        #ok(());
+      };
+      case (null) { #err("User not found") };
+    };
+  };
+
+  public query func getShutdownStatus() : async ShutdownStatus {
+    let now = Time.now();
+    let active = if (shutdownActive and now > shutdownEndsAt) {
+      false;
+    } else {
+      shutdownActive;
+    };
+    {
+      active;
+      reason = shutdownReason;
+      endsAt = shutdownEndsAt;
+      startedAt = shutdownStartedAt;
+      startedBy = shutdownStartedBy;
+    };
+  };
+};
