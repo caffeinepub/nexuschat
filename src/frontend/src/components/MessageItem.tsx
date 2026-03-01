@@ -59,6 +59,76 @@ export default function MessageItem({
     }
   };
 
+  const isAnnouncement = message.content.startsWith("📢 **ANNOUNCEMENT** 📢");
+  const announcementBody = isAnnouncement
+    ? message.content.replace(/^📢 \*\*ANNOUNCEMENT\*\* 📢\n?/, "").trim()
+    : null;
+
+  if (isAnnouncement) {
+    return (
+      <motion.div
+        initial={isNew ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="group relative mx-2 my-2 rounded-xl border px-4 py-3"
+        style={{
+          background:
+            "linear-gradient(135deg, oklch(0.62 0.22 255 / 0.08), oklch(0.52 0.22 295 / 0.06))",
+          borderColor: "oklch(0.62 0.22 255 / 0.35)",
+          boxShadow: "0 0 18px oklch(0.62 0.22 255 / 0.12)",
+        }}
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          <span
+            className="text-xs font-bold font-mono-custom tracking-widest uppercase px-2 py-0.5 rounded"
+            style={{
+              background: "oklch(0.62 0.22 255 / 0.15)",
+              color: "oklch(0.78 0.20 255)",
+              border: "1px solid oklch(0.62 0.22 255 / 0.3)",
+            }}
+          >
+            📢 Announcement
+          </span>
+          <span
+            className="text-[10px] font-semibold font-mono-custom"
+            style={{
+              color:
+                authorRole === UserRole.owner
+                  ? "oklch(0.78 0.18 85)"
+                  : "oklch(0.78 0.20 255)",
+            }}
+          >
+            {authorRole === UserRole.owner && "👑 "}
+            {message.authorUsername}
+          </span>
+          <span className="text-[10px] text-muted-foreground font-mono-custom">
+            {formatTime(message.timestamp)}
+          </span>
+        </div>
+        <p
+          className="text-sm font-semibold leading-relaxed break-words whitespace-pre-wrap"
+          style={{ color: "oklch(0.92 0.06 220)" }}
+        >
+          {announcementBody}
+        </p>
+        {canDelete && hovered && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={() => void handleDelete()}
+            disabled={deleteMessage.isPending}
+            className="absolute right-2 top-2 w-7 h-7 flex items-center justify-center rounded bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+            title="Delete message"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </motion.button>
+        )}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={isNew ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}

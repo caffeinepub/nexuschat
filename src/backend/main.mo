@@ -5,12 +5,12 @@ import Time "mo:core/Time";
 import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
-import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
 // Specify the data migration function in with-clause
-(with migration = Migration.run)
+
 persistent actor NexusChat {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);

@@ -34,7 +34,7 @@ interface BotMessage {
 
 const HELP_TEXT = `📋 **Available Commands:**
 /mute @user · /unmute @user · /ban @user · /unban @user · /kick @user
-/promote @user · /demote @user · /stats · /help
+/promote @user · /demote @user · /announce <message> · /stats · /help
 👑 Owner only: /shutdown <reason> <minutes> · /cancelshutdown`;
 
 const COMMAND_LIST = [
@@ -321,11 +321,34 @@ export default function ChatPane({ channel, myProfile, users }: ChatPaneProps) {
       return;
     }
 
+    // /announce (admin/owner only)
+    if (cmdName === "announce") {
+      if (!isAdmin) {
+        addBotMessage("❌ Admin or owner required for /announce.", true);
+        return;
+      }
+      const text = parts.slice(1).join(" ").trim();
+      if (!text) {
+        addBotMessage("❌ Usage: /announce <message>", true);
+        return;
+      }
+      try {
+        await sendMessage.mutateAsync(`📢 **ANNOUNCEMENT** 📢\n${text}`);
+        addBotMessage(
+          `✅ Announcement sent to #${channel?.name ?? "channel"}.`,
+        );
+      } catch (err) {
+        addBotMessage(
+          `❌ Announce failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+          true,
+        );
+      }
+      return;
+    }
+
     // Informational-only commands (not yet implemented in backend)
     const infoOnlyCmds: Record<string, string> = {
       clear: "🗑️ /clear is owner-only. Use the admin panel to manage messages.",
-      announce:
-        "📢 /announce is not yet connected. Use the chat to send announcements manually.",
       slowmode: "⏱️ /slowmode is not yet available in this version.",
       lock: "🔒 /lock is not yet available in this version.",
       unlock: "🔓 /unlock is not yet available in this version.",
