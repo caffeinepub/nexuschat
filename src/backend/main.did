@@ -1,0 +1,80 @@
+type UserRole__1 = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserRole = 
+ variant {
+   admin;
+   member;
+   owner;
+ };
+type UserProfile = 
+ record {
+   isBanned: bool;
+   isMuted: bool;
+   joinedAt: int;
+   "principal": principal;
+   role: UserRole;
+   username: text;
+ };
+type Result_3 = 
+ variant {
+   err: text;
+   ok: Channel;
+ };
+type Result_2 = 
+ variant {
+   err: text;
+   ok: UserProfile;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: Message;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok;
+ };
+type Message = 
+ record {
+   authorPrincipal: principal;
+   authorUsername: text;
+   channelId: nat;
+   content: text;
+   id: nat;
+   timestamp: int;
+ };
+type Channel = 
+ record {
+   createdAt: int;
+   createdBy: text;
+   id: nat;
+   name: text;
+ };
+service : {
+  _initializeAccessControlWithSecret: (userSecret: text) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole__1) -> ();
+  banUser: (target: principal) -> (Result);
+  createChannel: (name: text) -> (Result_3);
+  deleteChannel: (channelId: nat) -> (Result);
+  deleteMessage: (channelId: nat, messageId: nat) -> (Result);
+  demoteUser: (target: principal) -> (Result);
+  getCallerUserRole: () -> (UserRole__1) query;
+  getMessages: (channelId: nat, since: opt int) -> (vec Message) query;
+  getMyProfile: () -> (opt UserProfile) query;
+  isCallerAdmin: () -> (bool) query;
+  isRegistered: () -> (bool) query;
+  kickUser: (target: principal) -> (Result);
+  listChannels: () -> (vec Channel) query;
+  listUsers: () -> (vec UserProfile) query;
+  muteUser: (target: principal) -> (Result);
+  promoteUser: (target: principal) -> (Result);
+  register: (username: text) -> (Result_2);
+  sendMessage: (channelId: nat, content: text) -> (Result_1);
+  unbanUser: (target: principal) -> (Result);
+  unmuteUser: (target: principal) -> (Result);
+}

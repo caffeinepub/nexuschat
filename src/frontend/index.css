@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Bricolage Grotesque (Display) ───────────────────────── */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque[opsz,wdth,wght].woff2")
+    format("woff2-variations");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+/* ── Geist Mono ──────────────────────────────────────────── */
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/assets/fonts/GeistMono[wght].woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* ── JetBrains Mono ──────────────────────────────────────── */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/assets/fonts/JetBrainsMono[wght].woff2") format("woff2-variations");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+/* ── Outfit ──────────────────────────────────────────────── */
+@font-face {
+  font-family: "Outfit";
+  src: url("/assets/fonts/Outfit[wght].woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.375rem;
+
+    /* ── NexusChat Dark Theme ─────────────────────────── */
+    --background:       0.12 0.005 264;
+    --foreground:       0.92 0.015 264;
+
+    --card:             0.16 0.008 264;
+    --card-foreground:  0.92 0.015 264;
+
+    --popover:          0.18 0.010 264;
+    --popover-foreground: 0.92 0.015 264;
+
+    /* Electric blue primary */
+    --primary:          0.62 0.22 255;
+    --primary-foreground: 0.08 0.010 264;
+
+    --secondary:        0.22 0.015 264;
+    --secondary-foreground: 0.85 0.015 264;
+
+    --muted:            0.20 0.012 264;
+    --muted-foreground: 0.58 0.018 264;
+
+    /* Violet accent */
+    --accent:           0.52 0.22 295;
+    --accent-foreground: 0.96 0.010 264;
+
+    --destructive:      0.62 0.22 22;
+    --destructive-foreground: 0.96 0 0;
+
+    --border:           0.26 0.020 264;
+    --input:            0.22 0.015 264;
+    --ring:             0.62 0.22 255;
+
+    /* Chart colors */
+    --chart-1: 0.62 0.22 255;
+    --chart-2: 0.52 0.22 295;
+    --chart-3: 0.68 0.20 160;
+    --chart-4: 0.72 0.18 55;
+    --chart-5: 0.65 0.22 22;
+
+    /* Sidebar */
+    --sidebar:          0.10 0.008 264;
+    --sidebar-foreground: 0.85 0.015 264;
+    --sidebar-primary:  0.62 0.22 255;
+    --sidebar-primary-foreground: 0.08 0.005 264;
+    --sidebar-accent:   0.22 0.015 264;
+    --sidebar-accent-foreground: 0.85 0.015 264;
+    --sidebar-border:   0.22 0.015 264;
+    --sidebar-ring:     0.62 0.22 255;
+
+    /* Custom NexusChat tokens */
+    --nexus-owner:      0.78 0.18 85;   /* gold */
+    --nexus-admin:      0.62 0.22 255;  /* blue */
+    --nexus-member:     0.58 0.018 264; /* muted */
+    --nexus-online:     0.68 0.20 155;  /* green */
+    --nexus-glow-blue:  0.62 0.22 255;
+    --nexus-surface-1:  0.14 0.010 264;
+    --nexus-surface-2:  0.18 0.012 264;
+    --nexus-surface-3:  0.22 0.015 264;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Outfit", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(var(--border));
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(var(--muted-foreground));
+  }
+}
+
+@layer utilities {
+  .nexus-glow {
+    box-shadow: 0 0 20px oklch(var(--nexus-glow-blue) / 0.3),
+                0 0 40px oklch(var(--nexus-glow-blue) / 0.1);
+  }
+  .nexus-glow-sm {
+    box-shadow: 0 0 8px oklch(var(--nexus-glow-blue) / 0.4);
+  }
+  .nexus-text-glow {
+    text-shadow: 0 0 20px oklch(var(--nexus-glow-blue) / 0.6);
+  }
+  .nexus-surface-1 {
+    background-color: oklch(var(--nexus-surface-1));
+  }
+  .nexus-surface-2 {
+    background-color: oklch(var(--nexus-surface-2));
+  }
+  .nexus-surface-3 {
+    background-color: oklch(var(--nexus-surface-3));
+  }
+  .font-display {
+    font-family: "Bricolage Grotesque", sans-serif;
+  }
+  .font-mono-custom {
+    font-family: "JetBrains Mono", monospace;
+  }
+  .text-owner {
+    color: oklch(var(--nexus-owner));
+  }
+  .text-admin-role {
+    color: oklch(var(--nexus-admin));
+  }
+  .text-member {
+    color: oklch(var(--nexus-member));
+  }
+  .bg-owner {
+    background-color: oklch(var(--nexus-owner) / 0.15);
+  }
+  .bg-admin-role {
+    background-color: oklch(var(--nexus-admin) / 0.15);
+  }
+  .border-owner {
+    border-color: oklch(var(--nexus-owner) / 0.4);
+  }
+  .border-admin-role {
+    border-color: oklch(var(--nexus-admin) / 0.4);
+  }
+}
